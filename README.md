@@ -1,6 +1,81 @@
 # Semantic Segmentation
-### Introduction
-In this project, you'll label the pixels of a road in images using a Fully Convolutional Network (FCN).
+
+Self-Driving Car Engineer Nanodegree Program
+
+## Introduction
+In this project, we'll label the pixels of a road in images using a Fully Convolutional Network (FCN).
+
+|      um_000000.png       |        um_000017.png     |
+:-------------------------:|:-------------------------:
+![00](./writeup/um_000000.png)  |  ![17](./writeup/um_000017.png)
+|      umm_000076.png      |        uu_000004.png     |
+![76](./writeup/umm_000076.png) | ![04](./writeup/uu_000004.png)
+
+
+## Write up
+
+### Fully Convolutional Network
+
+![FCN](./writeup/FCN.jpg)
+
+* replace fully connected layers with one by one convolutional layers
+
+* up-sampling through the use of transposed convolutional layers
+
+* skip connections
+
+### Convolution 1x1
+
+```
+conv_1x1 = tf.layers.conv2d(input_image,num_classes,1,1,padding='same',
+                            kernel_initializer= tf.random_normal_initializer(stddev=0.01),
+                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+```
+
+### Transposed Convolutions
+
+![TransposedConvolution](./writeup/TransposedConvolution.gif)
+
+Blue maps are inputs,and cyan maps are outputs.No padding and no trides.
+
+![upsampling](./writeup/up-sampling.png)
+
+* First row (FCN-32s): The singlestream net, upsamples stride 32 predictions back to pixels in a single step. 
+
+* Second row (FCN-16s): Combining predictions from both the final layer and the pool4 layer, at stride 16, lets our net predict finer details, while retaining high-level semantic information.  
+
+* Third row (FCN-8s): Additional predictions from pool3, at stride 8, provide further precision.
+
+### Skip Connections
+
+![Skip](./writeup/Skip.png)
+
+```
+# 1x1 convolution of vgg layer7 output
+# use random normal to initialize the kernel
+# use L2 regularizer as the kernel regularizer
+
+conv_1x1 = tf.layers.conv2d(vgg_layer7_out,num_classes,1,1,padding='same',
+                            kernel_initializer= tf.random_normal_initializer(stddev=0.01),
+                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+# up-sampling,kernel size is (4,4),stride size is (2,2)
+output = tf.layers.conv2d_transpose(conv_1x1,num_classes,4,2,padding = 'same',
+                                    kernel_initializer= tf.random_normal_initializer(stddev=0.01),
+                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+# 1x1 convolution of layer4 output
+
+layer4_conv_1x1 = tf.layers.conv2d(vgg_layer4_out,num_classes,1,1,padding='same',
+                                    kernel_initializer= tf.random_normal_initializer(stddev=0.01),
+                                    kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    
+# skip connection
+output = tf.add(output,layer4_conv_1x1)
+
+```
+
+
 
 ### Setup
 ##### GPU
@@ -34,15 +109,6 @@ Here are examples of a sufficient vs. insufficient output from a trained network
 Sufficient Result          |  Insufficient Result
 :-------------------------:|:-------------------------:
 ![Sufficient](./examples/sufficient_result.png)  |  ![Insufficient](./examples/insufficient_result.png)
-
-### Submission
-1. Ensure you've passed all the unit tests.
-2. Ensure you pass all points on [the rubric](https://review.udacity.com/#!/rubrics/989/view).
-3. Submit the following in a zip file.
- - `helper.py`
- - `main.py`
- - `project_tests.py`
- - Newest inference images from `runs` folder  (**all images from the most recent run**)
  
 ### Tips
 - The link for the frozen `VGG16` model is hardcoded into `helper.py`.  The model can be found [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/vgg.zip).
